@@ -17,23 +17,49 @@ let couples = [
     { id: 15, name: "Пара №15", image: "Photo_utch/15.webp", votes: 0 }
 ];
 
-// Загрузка данных из localStorage
+// Загрузка данных из Firebase или localStorage
 function loadData() {
-    const savedCouples = localStorage.getItem('ballCouples');
-    if (savedCouples) {
-        const saved = JSON.parse(savedCouples);
-        // Обновляем изображения из дефолтных данных если их нет
-        couples.forEach((defaultCouple, index) => {
-            if (saved[index]) {
-                saved[index].image = saved[index].image || defaultCouple.image;
+    if (isFirebaseEnabled && database) {
+        // Загрузка из Firebase
+        database.ref('couples').once('value', (snapshot) => {
+            const firebaseData = snapshot.val();
+            if (firebaseData) {
+                couples = firebaseData;
+                renderCouples();
+            } else {
+                // Если в Firebase нет данных, сохраняем дефолтные
+                database.ref('couples').set(couples);
             }
         });
-        couples = saved;
+        
+        // Слушаем изменения в реальном времени
+        database.ref('couples').on('value', (snapshot) => {
+            const firebaseData = snapshot.val();
+            if (firebaseData) {
+                couples = firebaseData;
+                updateVoteCounts();
+            }
+        });
+    } else {
+        // Загрузка из localStorage (запасной вариант)
+        const savedCouples = localStorage.getItem('ballCouples');
+        if (savedCouples) {
+            const saved = JSON.parse(savedCouples);
+            couples.forEach((defaultCouple, index) => {
+                if (saved[index]) {
+                    saved[index].image = saved[index].image || defaultCouple.image;
+                }
+            });
+            couples = saved;
+        }
     }
 }
 
-// Сохранение данных в localStorage
+// Сохранение данных в Firebase и localStorage
 function saveData() {
+    if (isFirebaseEnabled && database) {
+        database.ref('couples').set(couples);
+    }
     localStorage.setItem('ballCouples', JSON.stringify(couples));
 }
 
