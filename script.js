@@ -3,15 +3,60 @@ const API_URL = window.location.port
     ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api`
     : `${window.location.protocol}//${window.location.hostname}/api`;
 
+// Константы
+const POLL_INTERVAL_MS = 5000;
+const VISIBILITY_CHECK_INTERVAL_MS = 2000;
+const TIMER_UPDATE_INTERVAL_MS = 1000;
+
 console.log('🔗 API URL:', API_URL);
 
 // Данные пар
 let couples = [];
+let isLoading = false;
+
+// Утилиты для loading состояния
+function showLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.add('active');
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+// Показать skeleton карточки во время загрузки
+function showSkeletonCards() {
+    const grid = document.getElementById('couplesGrid');
+    grid.innerHTML = '';
+    
+    for (let i = 0; i < 6; i++) {
+        const skeleton = document.createElement('div');
+        skeleton.className = 'couple-card skeleton';
+        skeleton.innerHTML = `
+            <div class="couple-image"></div>
+            <div class="couple-info">
+                <div class="couple-number">Загрузка...</div>
+                <div class="couple-name">Загрузка данных...</div>
+                <button class="btn-vote" disabled>Загрузка...</button>
+            </div>
+        `;
+        grid.appendChild(skeleton);
+    }
+}
 
 // Загрузка данных с сервера
 async function loadData() {
+    if (isLoading) return;
+    
     try {
+        isLoading = true;
         const response = await fetch(`${API_URL}/data`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
         const data = await response.json();
         
         // Проверяем timestamp последнего сброса
@@ -24,34 +69,51 @@ async function loadData() {
             localStorage.removeItem('votedCoupleId');
             localStorage.setItem('lastKnownReset', lastReset.toString());
             console.log('🔄 Голоса сброшены - можете голосовать снова!');
+            showNotification('Голосование сброшено! Вы можете проголосовать снова', 'info');
         }
         
         couples = data.couples;
         renderCouples();
         checkResultsVisibility();
+        
     } catch (error) {
         console.error('❌ Ошибка загрузки данных:', error);
-        console.log('⚠️ Убедитесь, что сервер запущен: npm start');
+        showError('Не удалось загрузить данные. Проверьте подключение к серверу.');
+    } finally {
+        isLoading = false;
+        hideLoading();
     }
 }
 
 // Сохранение данных на сервер (голосование)
 async function saveVote(coupleId) {
     try {
+        showLoading();
+        
         const response = await fetch(`${API_URL}/vote`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ coupleId })
         });
         
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
         const data = await response.json();
+        
         if (data.success) {
             await loadData(); // Перезагружаем данные
+            createConfetti(); // Конфетти при успешном голосовании
         }
+        
         return data.success;
     } catch (error) {
         console.error('❌ Ошибка голосования:', error);
+        showError('Не удалось зарегистрировать голос. Попробуйте снова.');
         return false;
+    } finally {
+        hideLoading();
     }
 }
 
@@ -59,6 +121,8 @@ async function saveVote(coupleId) {
 async function checkResultsVisibility() {
     try {
         const response = await fetch(`${API_URL}/data`);
+        if (!response.ok) return;
+        
         const data = await response.json();
         
         if (data.resultsVisible && !window.location.href.includes('results.html')) {
@@ -96,23 +160,30 @@ function renderCouples() {
     couples.forEach(couple => {
         const card = document.createElement('div');
         card.className = 'couple-card';
+        card.setAttribute('role', 'listitem');
         
         if (voted && couple.id === votedId) {
             card.classList.add('voted');
         }
         
+        const isVotedCard = voted && couple.id === votedId;
+        const buttonText = isVotedCard ? '✓ Вы проголосовали' : 
+                          voted ? 'Голосование закрыто' : 
+                          '💖 Проголосовать';
+        
         card.innerHTML = `
-            ${voted && couple.id === votedId ? '<div class="voted-badge">✓ Ваш голос</div>' : ''}
+            ${isVotedCard ? '<div class="voted-badge" aria-label="Вы проголосовали">✓ Ваш голос</div>' : ''}
             <div class="couple-image">
-                ${couple.image ? '<img src="' + couple.image + '" alt="' + couple.name + '" style="width: 100%; height: 100%; object-fit: cover;">' : '👫'}
+                ${couple.image ? `<img src="${couple.image}" alt="${couple.name}" loading="lazy">` : '👫'}
             </div>
             <div class="couple-info">
                 <div class="couple-number">Участник ${couple.id}</div>
-                <div class="couple-name">${couple.name}</div>
+                <div class="couple-name">${escapeHtml(couple.name)}</div>
                 <button class="btn-vote" 
                         data-id="${couple.id}" 
-                        ${voted ? 'disabled' : ''}>
-                    ${voted && couple.id === votedId ? 'Вы проголосовали' : voted ? 'Голосование закрыто' : '💖 Проголосовать'}
+                        ${voted ? 'disabled' : ''}
+                        aria-label="Проголосовать за ${couple.name}">
+                    ${buttonText}
                 </button>
             </div>
         `;
@@ -130,6 +201,13 @@ function renderCouples() {
     });
 }
 
+// Защита от XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // Модальное окно подтверждения
 let selectedCoupleId = null;
 
@@ -137,7 +215,13 @@ function showVoteModal(coupleId) {
     selectedCoupleId = coupleId;
     const couple = couples.find(c => c.id === coupleId);
     document.getElementById('coupleName').textContent = couple.name;
-    document.getElementById('voteModal').classList.add('active');
+    
+    const modal = document.getElementById('voteModal');
+    modal.classList.add('active');
+    
+    // Focus trap
+    const confirmBtn = document.getElementById('confirmVote');
+    if (confirmBtn) confirmBtn.focus();
 }
 
 function hideVoteModal() {
@@ -153,19 +237,69 @@ function confirmVote() {
                 hideVoteModal();
                 showThankYouModal();
                 renderCouples();
-            } else {
-                alert('Ошибка голосования. Проверьте подключение к серверу.');
             }
         });
     }
 }
 
 function showThankYouModal() {
-    document.getElementById('thankYouModal').classList.add('active');
+    const modal = document.getElementById('thankYouModal');
+    modal.classList.add('active');
+    
+    const closeBtn = document.getElementById('closeThankYou');
+    if (closeBtn) closeBtn.focus();
 }
 
 function hideThankYouModal() {
     document.getElementById('thankYouModal').classList.remove('active');
+}
+
+// Уведомления (вместо alert)
+function showNotification(message, type = 'info') {
+    // Простое уведомление в консоли
+    const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+    console.log(`${icon} ${message}`);
+}
+
+function showError(message) {
+    showNotification(message, 'error');
+    // Можно добавить toast уведомления
+}
+
+// Confetti эффект при голосовании
+function createConfetti() {
+    const colors = ['#FFD700', '#8B0000', '#DAA520', '#F5DEB3'];
+    const confettiCount = 50;
+    
+    for (let i = 0; i < confettiCount; i++) {
+        setTimeout(() => {
+            const confetti = document.createElement('div');
+            confetti.style.cssText = `
+                position: fixed;
+                width: 10px;
+                height: 10px;
+                background-color: ${colors[Math.floor(Math.random() * colors.length)]};
+                left: ${Math.random() * 100}%;
+                top: -10px;
+                opacity: 1;
+                transform: rotate(${Math.random() * 360}deg);
+                pointer-events: none;
+                z-index: 9999;
+            `;
+            
+            document.body.appendChild(confetti);
+            
+            const fall = confetti.animate([
+                { transform: `translateY(0) rotate(0deg)`, opacity: 1 },
+                { transform: `translateY(${window.innerHeight + 20}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+            ], {
+                duration: 3000 + Math.random() * 2000,
+                easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+            });
+            
+            fall.onfinish = () => confetti.remove();
+        }, i * 30);
+    }
 }
 
 // Таймер (опционально - показывает время до конца бала)
@@ -206,21 +340,31 @@ async function checkResultsVisibility() {
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', function() {
+    // Показываем skeleton при первой загрузке
+    showSkeletonCards();
+    
+    // Загружаем данные
     loadData();
     updateTimer();
     checkResultsVisibility();
-    setInterval(loadData, 5000); // Обновление данных каждые 5 секунд
-    setInterval(updateTimer, 1000);
-    setInterval(checkResultsVisibility, 2000); // Проверка результатов каждые 2 секунды
+    
+    // Периодические обновления
+    setInterval(loadData, POLL_INTERVAL_MS);
+    setInterval(updateTimer, TIMER_UPDATE_INTERVAL_MS);
+    setInterval(checkResultsVisibility, VISIBILITY_CHECK_INTERVAL_MS);
     
     // Обработчики модальных окон
     const confirmBtn = document.getElementById('confirmVote');
     const cancelBtn = document.getElementById('cancelVote');
     const closeBtn = document.getElementById('closeThankYou');
+    const closeVoteX = document.getElementById('closeVoteModal');
+    const closeThankYouX = document.getElementById('closeThankYouX');
     
     if (confirmBtn) confirmBtn.addEventListener('click', confirmVote);
     if (cancelBtn) cancelBtn.addEventListener('click', hideVoteModal);
     if (closeBtn) closeBtn.addEventListener('click', hideThankYouModal);
+    if (closeVoteX) closeVoteX.addEventListener('click', hideVoteModal);
+    if (closeThankYouX) closeThankYouX.addEventListener('click', hideThankYouModal);
     
     // Закрытие модального окна по клику вне его
     document.querySelectorAll('.modal').forEach(modal => {
@@ -230,4 +374,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    // Закрытие модалок по ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideVoteModal();
+            hideThankYouModal();
+        }
+    });
+});
 });

@@ -3,38 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Голосование за лучшую пару на балу 2025">
     <title>Голосование за лучшую пару - Бал 2025</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎭</text></svg>">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="loading-overlay" id="loadingOverlay" aria-live="polite" aria-label="Загрузка">
+        <div class="loading-spinner" role="status">
+            <span class="sr-only">Загрузка...</span>
+        </div>
+    </div>
+
     <div class="container">
         <header>
-            <div class="church-ornament">☦️</div>
+            <div class="church-ornament" aria-hidden="true">☦️</div>
             <h1>🎭 Бал 2025 🎭</h1>
             <h2>Голосование за лучшую пару</h2>
-            <div class="timer" id="timer"></div>
-            <div class="church-ornament">☦️</div>
+            <div class="timer" id="timer" aria-live="polite"></div>
+            <div class="church-ornament" aria-hidden="true">☦️</div>
         </header>
 
         <div class="info-panel">
             <p>Проголосуйте за вашу любимую пару! Каждый может проголосовать только один раз.</p>
         </div>
 
-        <div class="couples-grid" id="couplesGrid">
+        <div class="couples-grid" id="couplesGrid" role="list" aria-label="Список пар для голосования">
             <!-- Пары будут добавлены через JavaScript -->
         </div>
 
         <div class="footer">
-            <a href="admin.html" class="btn-admin">⚙️ Админ-панель</a>
+            <a href="admin.html" class="btn-admin" aria-label="Перейти в админ-панель">⚙️ Админ-панель</a>
         </div>
     </div>
 
-    <div id="voteModal" class="modal">
+    <div id="voteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="voteModalTitle">
         <div class="modal-content">
-            <h3>Подтвердите ваш голос</h3>
-            <p>Вы уверены, что хотите проголосовать за пару <span id="coupleName"></span>?</p>
-            <p class="warning">Вы сможете проголосовать только один раз!</p>
+            <button class="modal-close" id="closeVoteModal" aria-label="Закрыть">×</button>
+            <h3 id="voteModalTitle">Подтвердите ваш голос</h3>
+            <p>Вы уверены, что хотите проголосовать за пару <strong><span id="coupleName"></span></strong>?</p>
+            <p class="warning">⚠️ Вы сможете проголосовать только один раз!</p>
             <div class="modal-buttons">
                 <button class="btn-confirm" id="confirmVote">Да, проголосовать</button>
                 <button class="btn-cancel" id="cancelVote">Отмена</button>
@@ -42,10 +50,11 @@
         </div>
     </div>
 
-    <div id="thankYouModal" class="modal">
+    <div id="thankYouModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="thankYouTitle">
         <div class="modal-content success">
-            <h3>✅ Спасибо за ваш голос!</h3>
-            <p>Ваш голос учтён</p>
+            <button class="modal-close" id="closeThankYouX" aria-label="Закрыть">×</button>
+            <h3 id="thankYouTitle">✅ Спасибо за ваш голос!</h3>
+            <p>Ваш голос успешно учтён</p>
             <button class="btn-confirm" id="closeThankYou">Закрыть</button>
         </div>
     </div>
