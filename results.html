@@ -90,11 +90,83 @@
             margin-bottom: 10px;
         }
 
+        .podium-photo {
+            width: 200px;
+            height: 250px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 0 auto 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+
+        .podium-photo:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .podium-photo::after {
+            content: '🔍';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 1.2em;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .podium-photo:hover::after {
+            opacity: 1;
+        }
+
+        .podium-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .podium-place.first .podium-photo {
+            width: 240px;
+            height: 300px;
+            box-shadow: 0 8px 24px rgba(255, 215, 0, 0.4);
+        }
+
         .podium-couple-name {
             font-size: 1.5em;
             font-weight: bold;
             color: #333;
             margin-bottom: 10px;
+        }
+
+        .hot-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+            animation: hotPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes hotPulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+            }
         }
 
         .podium-votes {
@@ -138,6 +210,51 @@
             color: #667eea;
         }
 
+        .result-photo {
+            width: 60px;
+            height: 75px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-right: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        .result-photo:hover {
+            transform: scale(1.1);
+        }
+
+        .result-photo::after {
+            content: '🔍';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5em;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            background: rgba(0, 0, 0, 0.7);
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-photo:hover::after {
+            opacity: 1;
+        }
+
+        .result-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
         .result-name {
             flex: 1;
             font-size: 1.2em;
@@ -162,6 +279,184 @@
             height: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             transition: width 0.5s ease;
+        }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .lightbox.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            animation: zoomIn 0.3s ease;
+        }
+
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .lightbox-image {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: -50px;
+            right: 0;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+            transition: transform 0.2s ease;
+        }
+
+        .lightbox-close:hover {
+            transform: scale(1.2);
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            padding: 20px 25px;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+            user-select: none;
+            z-index: 10001;
+            /* Увеличение области клика для мобильных */
+            min-width: 60px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox-nav:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .lightbox-nav:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .lightbox-prev {
+            left: 20px;
+        }
+
+        .lightbox-next {
+            right: 20px;
+        }
+
+        .lightbox-caption {
+            position: absolute;
+            bottom: -60px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        /* Подсказка свайпа на мобильных */
+        .swipe-hint {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 0.9em;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 16px;
+            border-radius: 20px;
+            opacity: 0;
+            animation: fadeInOut 3s ease-in-out;
+            pointer-events: none;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; }
+            20%, 80% { opacity: 0.8; }
+        }
+
+        @media (min-width: 769px) {
+            .swipe-hint {
+                display: none;
+            }
+        }
+
+        /* Круговой прогресс */
+        .circular-progress {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .circular-progress svg {
+            transform: rotate(-90deg);
+        }
+
+        .circular-progress circle {
+            fill: none;
+            stroke-width: 8;
+        }
+
+        .circular-progress .circle-bg {
+            stroke: #e0e0e0;
+        }
+
+        .circular-progress .circle-progress {
+            stroke: url(#gradient);
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
         }
 
         .refresh-btn {
@@ -196,8 +491,118 @@
                 order: initial;
             }
 
+            .podium-place.first .podium-photo {
+                width: 200px;
+                height: 250px;
+            }
+
             .result-bar-container {
-                width: 100px;
+                display: none; /* Скрываем на мобильных - есть круговой прогресс */
+            }
+
+            .result-photo {
+                width: 50px;
+                height: 62px;
+            }
+
+            .result-name {
+                font-size: 1em;
+            }
+
+            .result-votes {
+                font-size: 0.9em;
+                margin-right: 10px;
+            }
+
+            .circular-progress {
+                width: 70px;
+                height: 70px;
+            }
+
+            .circular-progress svg {
+                width: 70px;
+                height: 70px;
+            }
+
+            .progress-text {
+                font-size: 1em;
+            }
+
+            /* Lightbox оптимизация для мобильных */
+            .lightbox-nav {
+                font-size: 40px;
+                padding: 15px 20px;
+                min-width: 70px;
+                min-height: 70px;
+            }
+
+            .lightbox-prev {
+                left: 10px;
+            }
+
+            .lightbox-next {
+                right: 10px;
+            }
+
+            .lightbox-close {
+                top: 10px;
+                right: 10px;
+                font-size: 40px;
+                background: rgba(0, 0, 0, 0.7);
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .lightbox-caption {
+                font-size: 1.2em;
+                bottom: 20px;
+                background: rgba(0, 0, 0, 0.7);
+                padding: 10px;
+                border-radius: 10px;
+            }
+
+            .lightbox-image {
+                max-height: 80vh;
+            }
+
+            .hot-badge {
+                font-size: 0.85em;
+                padding: 6px 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .result-row {
+                padding: 10px;
+                flex-wrap: wrap;
+                position: relative;
+            }
+
+            .result-position {
+                font-size: 1.2em;
+                width: 40px;
+            }
+
+            .circular-progress {
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 60px;
+                height: 60px;
+            }
+
+            .circular-progress svg {
+                width: 60px;
+                height: 60px;
+            }
+
+            .progress-text {
+                font-size: 0.9em;
             }
         }
     </style>
@@ -231,11 +636,26 @@
         </div>
     </div>
 
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox">
+        <div class="lightbox-content">
+            <button class="lightbox-close" onclick="closeLightbox()">×</button>
+            <button class="lightbox-nav lightbox-prev" onclick="navigateLightbox(-1)">‹</button>
+            <img id="lightboxImage" class="lightbox-image" src="" alt="">
+            <button class="lightbox-nav lightbox-next" onclick="navigateLightbox(1)">›</button>
+            <div class="lightbox-caption" id="lightboxCaption"></div>
+            <div class="swipe-hint">← Свайпните для навигации →</div>
+        </div>
+    </div>
+
     <script>
         // API URL
         const API_URL = window.location.port 
             ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api`
             : `${window.location.protocol}//${window.location.hostname}/api`;
+        
+        let currentLightboxIndex = 0;
+        let couplesData = [];
         
         async function loadResults() {
             try {
@@ -244,6 +664,7 @@
 
                 // Сортируем по голосам
                 couples.sort((a, b) => b.votes - a.votes);
+                couplesData = couples;
 
                 // Подсчитываем общее количество голосов
                 const totalVotes = couples.reduce((sum, c) => sum + c.votes, 0);
@@ -261,16 +682,25 @@
                     if (couple.votes > 0) {
                         const podiumPlace = document.createElement('div');
                         podiumPlace.className = `podium-place ${classes[i]}`;
+                        
+                        const photoHtml = couple.image 
+                            ? `<div class="podium-photo" onclick="openLightbox(${i})"><img src="${couple.image}" alt="${couple.name}" loading="lazy"></div>`
+                            : `<div class="podium-photo" style="display: flex; align-items: center; justify-content: center; font-size: 4em; color: #ccc;">👫</div>`;
+                        
+                        const hotBadge = i === 0 ? '<div class="hot-badge">🔥 Лидирует!</div>' : '';
+                        
                         podiumPlace.innerHTML = `
                             <div class="podium-medal">${medals[i]}</div>
-                            <div class="podium-couple-name">${couple.name}</div>
+                            ${photoHtml}
+                            <div class="podium-couple-name">${escapeHtml(couple.name)}</div>
                             <div class="podium-votes">❤️ ${couple.votes} ${getVotesWord(couple.votes)}</div>
+                            ${hotBadge}
                         `;
                         podium.appendChild(podiumPlace);
                     }
                 }
 
-                // Отображаем полную таблицу
+                // Отображаем полную таблицу с круговыми прогрессами
                 const resultsTable = document.getElementById('resultsTable');
                 resultsTable.innerHTML = '';
 
@@ -279,21 +709,119 @@
                 couples.forEach((couple, index) => {
                     const percentage = maxVotes > 0 ? (couple.votes / maxVotes) * 100 : 0;
                     
+                    const photoHtml = couple.image 
+                        ? `<div class="result-photo" onclick="openLightbox(${index})"><img src="${couple.image}" alt="${couple.name}" loading="lazy"></div>`
+                        : `<div class="result-photo" style="display: flex; align-items: center; justify-content: center; font-size: 2em; color: #ccc;">👫</div>`;
+                    
                     const row = document.createElement('div');
                     row.className = 'result-row';
                     row.innerHTML = `
                         <div class="result-position">#${index + 1}</div>
-                        <div class="result-name">${couple.name}</div>
+                        ${photoHtml}
+                        <div class="result-name">${escapeHtml(couple.name)}</div>
                         <div class="result-votes">${couple.votes} ${getVotesWord(couple.votes)}</div>
-                        <div class="result-bar-container">
-                            <div class="result-bar" style="width: ${percentage}%"></div>
-                        </div>
+                        ${createCircularProgress(percentage, couple.votes)}
                     `;
                     resultsTable.appendChild(row);
                 });
             } catch (error) {
                 console.error('Ошибка загрузки результатов:', error);
                 document.getElementById('totalVotes').textContent = 'Ошибка загрузки';
+            }
+        }
+
+        function createCircularProgress(percentage, votes) {
+            const radius = 36;
+            const circumference = 2 * Math.PI * radius;
+            const offset = circumference - (percentage / 100) * circumference;
+            
+            return `
+                <div class="circular-progress">
+                    <svg width="80" height="80">
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle class="circle-bg" cx="40" cy="40" r="${radius}"></circle>
+                        <circle class="circle-progress" cx="40" cy="40" r="${radius}"
+                                stroke-dasharray="${circumference}"
+                                stroke-dashoffset="${offset}">
+                        </circle>
+                    </svg>
+                    <div class="progress-text">${Math.round(percentage)}%</div>
+                </div>
+            `;
+        }
+
+        // Lightbox функции
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        function openLightbox(index) {
+            const couple = couplesData[index];
+            if (!couple.image) return;
+            
+            currentLightboxIndex = index;
+            const lightbox = document.getElementById('lightbox');
+            const img = document.getElementById('lightboxImage');
+            const caption = document.getElementById('lightboxCaption');
+            
+            img.src = couple.image;
+            caption.textContent = couple.name;
+            lightbox.classList.add('active');
+            
+            // Запрет прокрутки
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function navigateLightbox(direction) {
+            let newIndex = currentLightboxIndex + direction;
+            
+            // Цикличная навигация
+            if (newIndex < 0) newIndex = couplesData.length - 1;
+            if (newIndex >= couplesData.length) newIndex = 0;
+            
+            // Пропускаем пары без фото
+            while (!couplesData[newIndex].image && newIndex !== currentLightboxIndex) {
+                newIndex += direction;
+                if (newIndex < 0) newIndex = couplesData.length - 1;
+                if (newIndex >= couplesData.length) newIndex = 0;
+            }
+            
+            openLightbox(newIndex);
+        }
+
+        // Touch жесты для свайпа
+        function handleTouchStart(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }
+
+        function handleTouchEnd(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }
+
+        function handleSwipe() {
+            const swipeThreshold = 50; // минимальная дистанция свайпа
+            
+            if (touchEndX < touchStartX - swipeThreshold) {
+                // Свайп влево - следующее фото
+                if (navigator.vibrate) navigator.vibrate(10); // Короткая вибрация
+                navigateLightbox(1);
+            }
+            
+            if (touchEndX > touchStartX + swipeThreshold) {
+                // Свайп вправо - предыдущее фото
+                if (navigator.vibrate) navigator.vibrate(10); // Короткая вибрация
+                navigateLightbox(-1);
             }
         }
 
@@ -316,6 +844,12 @@
             return 'голосов';
         }
 
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         function updateTimer() {
             const timer = document.getElementById('timer');
             if (timer) {
@@ -335,6 +869,28 @@
             
             // Автообновление каждые 10 секунд
             setInterval(loadResults, 10000);
+            
+            // Клавиатурная навигация для lightbox
+            document.addEventListener('keydown', function(e) {
+                const lightbox = document.getElementById('lightbox');
+                if (lightbox.classList.contains('active')) {
+                    if (e.key === 'Escape') closeLightbox();
+                    if (e.key === 'ArrowLeft') navigateLightbox(-1);
+                    if (e.key === 'ArrowRight') navigateLightbox(1);
+                }
+            });
+            
+            // Закрытие по клику на фон
+            const lightbox = document.getElementById('lightbox');
+            lightbox.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeLightbox();
+                }
+            });
+            
+            // Touch жесты для lightbox
+            lightbox.addEventListener('touchstart', handleTouchStart, false);
+            lightbox.addEventListener('touchend', handleTouchEnd, false);
         });
     </script>
 </body>
