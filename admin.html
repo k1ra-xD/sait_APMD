@@ -178,6 +178,14 @@
 
         <div class="admin-section">
             <h2>🔄 Управление голосованием</h2>
+            <div style="background: #f0f0f0; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h3 style="color: #333; margin-bottom: 10px;">📱 Ссылка для показа результатов:</h3>
+                <p style="color: #666; margin-bottom: 15px;">Скопируйте и отправьте эту ссылку всем гостям когда нужно показать результаты:</p>
+                <input type="text" id="resultsLink" readonly 
+                       style="width: 100%; padding: 10px; font-size: 1em; border: 2px solid #667eea; border-radius: 5px; background: white;"
+                       value="">
+                <button class="btn-admin-action btn-success" onclick="copyResultsLink()" style="margin-top: 10px;">📋 Копировать ссылку</button>
+            </div>
             <div class="action-buttons">
                 <button class="btn-admin-action btn-success" id="toggleResults" onclick="toggleResultsVisibility()">👁️ Показать результаты</button>
                 <button class="btn-admin-action" onclick="exportResults()">📥 Экспорт результатов</button>
@@ -307,6 +315,13 @@
             }
         }
 
+        function copyResultsLink() {
+            const link = document.getElementById('resultsLink');
+            link.select();
+            document.execCommand('copy');
+            alert('✅ Ссылка скопирована! Отправьте её всем гостям.');
+        }
+
         function toggleResultsVisibility() {
             const currentState = localStorage.getItem('showResults');
             
@@ -360,7 +375,9 @@
             if (!checkPassword()) {
                 return;
             }
-            document.getElementById('siteUrl').textContent = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
+            const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '');
+            document.getElementById('siteUrl').textContent = baseUrl + 'index.html';
+            document.getElementById('resultsLink').value = baseUrl + 'index.html?showResults=true';
             loadCouples();
             updateResultsButton();
         });

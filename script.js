@@ -167,6 +167,12 @@ function checkResultsVisibility() {
     }
 }
 
+// Проверка URL параметра для показа результатов
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('showResults') === 'true') {
+    localStorage.setItem('showResults', Date.now().toString());
+}
+
 // Слушатель изменений localStorage для мгновенного редиректа (работает между вкладками)
 window.addEventListener('storage', function(e) {
     if (e.key === 'showResults' && e.newValue && e.newValue !== 'false') {
