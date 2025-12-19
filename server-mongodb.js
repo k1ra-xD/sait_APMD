@@ -227,3 +227,16 @@ app.listen(PORT, '0.0.0.0', () => {
 ╚════════════════════════════════════════════╝
     `);
 });
+
+// Debug-эндпоинт: возвращает количество документов и примерные данные (временно)
+app.get('/api/debug', async (req, res) => {
+    try {
+        const count = await Couple.countDocuments();
+        const sample = await Couple.find().sort({ id: 1 }).limit(5);
+        const settings = await Settings.find();
+
+        res.json({ count, sample, settings });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
