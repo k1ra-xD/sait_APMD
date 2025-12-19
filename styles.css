@@ -8,7 +8,7 @@ body {
     font-family: 'Georgia', 'Times New Roman', serif;
     background: 
         linear-gradient(rgba(139, 0, 0, 0.7), rgba(90, 0, 0, 0.8)),
-        url('../foto_cait/2.webp') center no-repeat fixed;
+        url('foto_cait/2.webp') center no-repeat fixed;
     background-size: auto 100%;
     min-height: 100vh;
     padding: 20px;
