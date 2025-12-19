@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Админ-панель - Бал 2025</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="firebase-config.js"></script>
     <style>
         .admin-container {
             max-width: 1000px;
@@ -215,8 +211,11 @@
     </div>
 
     <script>
+        // API URL
+        const API_URL = `${window.location.protocol}//${window.location.hostname}:${window.location.port || '3000'}/api`;
+        
         // Проверка пароля при загрузке страницы
-        const ADMIN_PASSWORD = "admin2025"; // Измените этот пароль!
+        const ADMIN_PASSWORD = "admin2025";
 
         function checkPassword() {
             const savedPassword = sessionStorage.getItem('adminAuthenticated');
@@ -237,19 +236,16 @@
 
         let couples = [];
 
-        function loadCouples() {
-            const savedCouples = localStorage.getItem('ballCouples');
-            if (savedCouples) {
-                couples = JSON.parse(savedCouples);
-            } else {
-                // Инициализация пар по умолчанию
-                for (let i = 1; i <= 20; i++) {
-                    couples.push({ id: i, name: `Пара №${i}`, image: '', votes: 0 });
-                }
-                localStorage.setItem('ballCouples', JSON.stringify(couples));
+        async function loadCouples() {
+            try {
+                const response = await fetch(`${API_URL}/couples`);
+                couples = await response.json();
+                updateStats();
+                renderEditor();
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                alert('Не удалось загрузить данные. Проверьте подключение к серверу.');
             }
-            updateStats();
-            renderEditor();
         }
 
         function updateStats() {
@@ -284,7 +280,8 @@
             });
         }
 
-        function saveCouples() {
+        async function saveCouples() {
+            // Собираем данные из полей ввода
             couples.forEach(couple => {
                 const nameInput = document.getElementById(`name-${couple.id}`);
                 const imageInput = document.getElementById(`image-${couple.id}`);
@@ -293,64 +290,84 @@
                 if (imageInput) couple.image = imageInput.value;
             });
 
-            localStorage.setItem('ballCouples', JSON.stringify(couples));
-            alert('✅ Изменения сохранены!');
-            loadCouples();
+            try {
+                const response = await fetch(`${API_URL}/couples`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(couples)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('✅ Изменения сохранены!');
+                    await loadCouples();
+                }
+            } catch (error) {
+                console.error('Ошибка сохранения:', error);
+                alert('Ошибка при сохранении. Проверьте подключение к серверу.');
+            }
         }
 
-        function resetVotes() {
-            if (confirm('Вы уверены, что хотите сбросить все голоса? Это действие нельзя отменить!')) {
-                couples.forEach(couple => couple.votes = 0);
-                localStorage.setItem('ballCouples', JSON.stringify(couples));
-                localStorage.removeItem('hasVoted');
-                localStorage.removeItem('votedCoupleId');
-                alert('✅ Голоса сброшены!');
-                loadCouples();
+        async function resetVotes() {
+            if (confirm('Вы уверены, что хотите сбросить все голоса?')) {
+                try {
+                    const response = await fetch(`${API_URL}/reset`, { method: 'POST' });
+                    const data = await response.json();
+                    if (data.success) {
+                        alert('✅ Голоса сброшены!');
+                        await loadCouples();
+                    }
+                } catch (error) {
+                    console.error('Ошибка сброса:', error);
+                    alert('Ошибка при сбросе голосов');
+                }
             }
         }
 
         function resetAll() {
-            if (confirm('Вы уверены, что хотите сбросить ВСЁ (названия, фото, голоса)? Это действие нельзя отменить!')) {
-                if (confirm('Последнее предупреждение! Все данные будут удалены!')) {
-                    localStorage.clear();
-                    alert('✅ Все данные сброшены!');
-                    location.reload();
-                }
-            }
+            alert('Функция сброса всех данных отключена. Используйте сброс голосов.');
         }
 
         function copyResultsLink() {
             const link = document.getElementById('resultsLink');
             link.select();
             document.execCommand('copy');
-            alert('✅ Ссылка скопирована! Отправьте её всем гостям.');
+            alert('✅ Ссылка скопирована!');
         }
 
-        function toggleResultsVisibility() {
-            const currentState = localStorage.getItem('showResults');
-            
-            if (currentState && currentState !== 'false') {
-                // Скрываем результаты
-                localStorage.setItem('showResults', 'false');
+        async function toggleResultsVisibility() {
+            try {
+                const response = await fetch(`${API_URL}/toggle-results`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.resultsVisible) {
+                    alert('✅ Результаты показаны! Пользователи будут перенаправлены.');
+                } else {
+                    alert('❌ Результаты скрыты.');
+                }
+                
                 updateResultsButton();
-                alert('❌ Результаты скрыты от пользователей');
-            } else {
-                // Показываем результаты - используем timestamp для гарантированного обновления
-                localStorage.setItem('showResults', Date.now().toString());
-                updateResultsButton();
-                alert('✅ Результаты показаны! Пользователи будут перенаправлены на страницу результатов');
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Не удалось изменить видимость результатов');
             }
         }
 
-        function updateResultsButton() {
-            const showResults = localStorage.getItem('showResults');
-            const btn = document.getElementById('toggleResults');
-            if (showResults && showResults !== 'false') {
-                btn.textContent = '🙈 Скрыть результаты';
-                btn.className = 'btn-admin-action btn-danger';
-            } else {
-                btn.textContent = '👁️ Показать результаты';
-                btn.className = 'btn-admin-action btn-success';
+        async function updateResultsButton() {
+            try {
+                const response = await fetch(`${API_URL}/results-status`);
+                const data = await response.json();
+                const btn = document.getElementById('toggleResults');
+                
+                if (data.resultsVisible) {
+                    btn.textContent = '🙈 Скрыть результаты';
+                    btn.className = 'btn-admin-action btn-danger';
+                } else {
+                    btn.textContent = '👁️ Показать результаты';
+                    btn.className = 'btn-admin-action btn-success';
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
             }
         }
 
@@ -364,7 +381,6 @@
                 text += `${index + 1}. ${medal} ${couple.name} - ${couple.votes} голосов\n`;
             });
 
-            // Создаем blob и скачиваем
             const blob = new Blob([text], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -374,16 +390,35 @@
             URL.revokeObjectURL(url);
         }
 
-        // Отображение текущего URL
-        document.addEventListener('DOMContentLoaded', function() {
-            if (!checkPassword()) {
-                return;
-            }
-            const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '');
-            document.getElementById('siteUrl').textContent = baseUrl + 'index.html';
-            document.getElementById('resultsLink').value = baseUrl + 'index.html?showResults=true';
-            loadCouples();
-            updateResultsButton();
+        // Инициализация
+        let autoUpdateInterval;
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!checkPassword()) return;
+            
+            const baseUrl = `${window.location.protocol}//${window.location.hostname}:${window.location.port || '3000'}/`;
+            document.getElementById('siteUrl').textContent = baseUrl;
+            document.getElementById('resultsLink').value = baseUrl;
+            
+            await loadCouples();
+            await updateResultsButton();
+            
+            // Автообновление каждые 10 секунд (увеличено с 3 до 10)
+            autoUpdateInterval = setInterval(loadCouples, 10000);
+            
+            // Останавливаем автообновление при фокусе на поле ввода
+            document.addEventListener('focusin', (e) => {
+                if (e.target.tagName === 'INPUT') {
+                    clearInterval(autoUpdateInterval);
+                }
+            });
+            
+            // Возобновляем автообновление когда убираем фокус
+            document.addEventListener('focusout', (e) => {
+                if (e.target.tagName === 'INPUT') {
+                    autoUpdateInterval = setInterval(loadCouples, 10000);
+                }
+            });
         });
     </script>
     

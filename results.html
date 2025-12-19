@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Результаты голосования - Бал 2025</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🏆</text></svg>">
     <link rel="stylesheet" href="styles.css">
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="firebase-config.js"></script>
     <style>
         .results-container {
             max-width: 1200px;
@@ -235,68 +232,67 @@
     </div>
 
     <script>
-        function loadResults() {
-            const savedCouples = localStorage.getItem('ballCouples');
-            let couples = [];
-            
-            if (savedCouples) {
-                couples = JSON.parse(savedCouples);
-            } else {
-                // Данные по умолчанию
-                for (let i = 1; i <= 20; i++) {
-                    couples.push({ id: i, name: `Пара №${i}`, votes: 0 });
+        // API URL
+        const API_URL = `${window.location.protocol}//${window.location.hostname}:${window.location.port || '3000'}/api`;
+        
+        async function loadResults() {
+            try {
+                const response = await fetch(`${API_URL}/couples`);
+                let couples = await response.json();
+
+                // Сортируем по голосам
+                couples.sort((a, b) => b.votes - a.votes);
+
+                // Подсчитываем общее количество голосов
+                const totalVotes = couples.reduce((sum, c) => sum + c.votes, 0);
+                document.getElementById('totalVotes').textContent = totalVotes;
+
+                // Отображаем топ-3
+                const podium = document.getElementById('podium');
+                podium.innerHTML = '';
+
+                const medals = ['🥇', '🥈', '🥉'];
+                const classes = ['first', 'second', 'third'];
+
+                for (let i = 0; i < Math.min(3, couples.length); i++) {
+                    const couple = couples[i];
+                    if (couple.votes > 0) {
+                        const podiumPlace = document.createElement('div');
+                        podiumPlace.className = `podium-place ${classes[i]}`;
+                        podiumPlace.innerHTML = `
+                            <div class="podium-medal">${medals[i]}</div>
+                            <div class="podium-couple-name">${couple.name}</div>
+                            <div class="podium-votes">❤️ ${couple.votes} ${getVotesWord(couple.votes)}</div>
+                        `;
+                        podium.appendChild(podiumPlace);
+                    }
                 }
-            }
 
-            // Сортируем по голосам
-            couples.sort((a, b) => b.votes - a.votes);
+                // Отображаем полную таблицу
+                const resultsTable = document.getElementById('resultsTable');
+                resultsTable.innerHTML = '';
 
-            // Подсчитываем общее количество голосов
-            const totalVotes = couples.reduce((sum, c) => sum + c.votes, 0);
-            document.getElementById('totalVotes').textContent = totalVotes;
+                const maxVotes = couples.length > 0 ? couples[0].votes : 1;
 
-            // Отображаем топ-3
-            const podium = document.getElementById('podium');
-            podium.innerHTML = '';
-
-            const medals = ['🥇', '🥈', '🥉'];
-            const classes = ['first', 'second', 'third'];
-
-            for (let i = 0; i < Math.min(3, couples.length); i++) {
-                const couple = couples[i];
-                if (couple.votes > 0) {
-                    const podiumPlace = document.createElement('div');
-                    podiumPlace.className = `podium-place ${classes[i]}`;
-                    podiumPlace.innerHTML = `
-                        <div class="podium-medal">${medals[i]}</div>
-                        <div class="podium-couple-name">${couple.name}</div>
-                        <div class="podium-votes">❤️ ${couple.votes} ${getVotesWord(couple.votes)}</div>
+                couples.forEach((couple, index) => {
+                    const percentage = maxVotes > 0 ? (couple.votes / maxVotes) * 100 : 0;
+                    
+                    const row = document.createElement('div');
+                    row.className = 'result-row';
+                    row.innerHTML = `
+                        <div class="result-position">#${index + 1}</div>
+                        <div class="result-name">${couple.name}</div>
+                        <div class="result-votes">${couple.votes} ${getVotesWord(couple.votes)}</div>
+                        <div class="result-bar-container">
+                            <div class="result-bar" style="width: ${percentage}%"></div>
+                        </div>
                     `;
-                    podium.appendChild(podiumPlace);
-                }
+                    resultsTable.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки результатов:', error);
+                document.getElementById('totalVotes').textContent = 'Ошибка загрузки';
             }
-
-            // Отображаем полную таблицу
-            const resultsTable = document.getElementById('resultsTable');
-            resultsTable.innerHTML = '';
-
-            const maxVotes = couples.length > 0 ? couples[0].votes : 1;
-
-            couples.forEach((couple, index) => {
-                const percentage = maxVotes > 0 ? (couple.votes / maxVotes) * 100 : 0;
-                
-                const row = document.createElement('div');
-                row.className = 'result-row';
-                row.innerHTML = `
-                    <div class="result-position">#${index + 1}</div>
-                    <div class="result-name">${couple.name}</div>
-                    <div class="result-votes">${couple.votes} ${getVotesWord(couple.votes)}</div>
-                    <div class="result-bar-container">
-                        <div class="result-bar" style="width: ${percentage}%"></div>
-                    </div>
-                `;
-                resultsTable.appendChild(row);
-            });
         }
 
         function getVotesWord(count) {

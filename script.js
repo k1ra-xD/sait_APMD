@@ -1,66 +1,70 @@
-// Данные пар (можно легко изменить через админ-панель)
-let couples = [
-    { id: 1, name: "Пара №1", image: "Photo_utch/1.jpg", votes: 0 },
-    { id: 2, name: "Пара №2", image: "Photo_utch/2.webp", votes: 0 },
-    { id: 3, name: "Пара №3", image: "Photo_utch/3.webp", votes: 0 },
-    { id: 4, name: "Пара №4", image: "Photo_utch/4.webp", votes: 0 },
-    { id: 5, name: "Пара №5", image: "Photo_utch/5.webp", votes: 0 },
-    { id: 6, name: "Пара №6", image: "Photo_utch/6.webp", votes: 0 },
-    { id: 7, name: "Пара №7", image: "Photo_utch/7.webp", votes: 0 },
-    { id: 8, name: "Пара №8", image: "Photo_utch/8.webp", votes: 0 },
-    { id: 9, name: "Пара №9", image: "Photo_utch/9.webp", votes: 0 },
-    { id: 10, name: "Пара №10", image: "Photo_utch/10.webp", votes: 0 },
-    { id: 11, name: "Пара №11", image: "Photo_utch/11.webp", votes: 0 },
-    { id: 12, name: "Пара №12", image: "Photo_utch/12.webp", votes: 0 },
-    { id: 13, name: "Пара №13", image: "Photo_utch/13.webp", votes: 0 },
-    { id: 14, name: "Пара №14", image: "Photo_utch/14.webp", votes: 0 },
-    { id: 15, name: "Пара №15", image: "Photo_utch/15.webp", votes: 0 }
-];
+// Конфигурация API - автоматически определяет правильный адрес
+const API_URL = `${window.location.protocol}//${window.location.hostname}:${window.location.port || '3000'}/api`;
 
-// Загрузка данных из Firebase или localStorage
-function loadData() {
-    if (isFirebaseEnabled && database) {
-        // Загрузка из Firebase
-        database.ref('couples').once('value', (snapshot) => {
-            const firebaseData = snapshot.val();
-            if (firebaseData) {
-                couples = firebaseData;
-                renderCouples();
-            } else {
-                // Если в Firebase нет данных, сохраняем дефолтные
-                database.ref('couples').set(couples);
-            }
-        });
+console.log('🔗 API URL:', API_URL);
+
+// Данные пар
+let couples = [];
+
+// Загрузка данных с сервера
+async function loadData() {
+    try {
+        const response = await fetch(`${API_URL}/data`);
+        const data = await response.json();
         
-        // Слушаем изменения в реальном времени
-        database.ref('couples').on('value', (snapshot) => {
-            const firebaseData = snapshot.val();
-            if (firebaseData) {
-                couples = firebaseData;
-                updateVoteCounts();
-            }
-        });
-    } else {
-        // Загрузка из localStorage (запасной вариант)
-        const savedCouples = localStorage.getItem('ballCouples');
-        if (savedCouples) {
-            const saved = JSON.parse(savedCouples);
-            couples.forEach((defaultCouple, index) => {
-                if (saved[index]) {
-                    saved[index].image = saved[index].image || defaultCouple.image;
-                }
-            });
-            couples = saved;
+        // Проверяем timestamp последнего сброса
+        const lastReset = data.lastReset || 0;
+        const lastKnownReset = parseInt(localStorage.getItem('lastKnownReset') || '0');
+        
+        if (lastReset > lastKnownReset) {
+            // Был сброс - очищаем localStorage
+            localStorage.removeItem('hasVoted');
+            localStorage.removeItem('votedCoupleId');
+            localStorage.setItem('lastKnownReset', lastReset.toString());
+            console.log('🔄 Голоса сброшены - можете голосовать снова!');
         }
+        
+        couples = data.couples;
+        renderCouples();
+        checkResultsVisibility();
+    } catch (error) {
+        console.error('❌ Ошибка загрузки данных:', error);
+        console.log('⚠️ Убедитесь, что сервер запущен: npm start');
     }
 }
 
-// Сохранение данных в Firebase и localStorage
-function saveData() {
-    if (isFirebaseEnabled && database) {
-        database.ref('couples').set(couples);
+// Сохранение данных на сервер (голосование)
+async function saveVote(coupleId) {
+    try {
+        const response = await fetch(`${API_URL}/vote`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coupleId })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            await loadData(); // Перезагружаем данные
+        }
+        return data.success;
+    } catch (error) {
+        console.error('❌ Ошибка голосования:', error);
+        return false;
     }
-    localStorage.setItem('ballCouples', JSON.stringify(couples));
+}
+
+// Проверка видимости результатов
+async function checkResultsVisibility() {
+    try {
+        const response = await fetch(`${API_URL}/data`);
+        const data = await response.json();
+        
+        if (data.resultsVisible && !window.location.href.includes('results.html')) {
+            window.location.href = 'results.html';
+        }
+    } catch (error) {
+        console.error('Ошибка проверки результатов:', error);
+    }
 }
 
 // Проверка, проголосовал ли пользователь
@@ -98,7 +102,7 @@ function renderCouples() {
         card.innerHTML = `
             ${voted && couple.id === votedId ? '<div class="voted-badge">✓ Ваш голос</div>' : ''}
             <div class="couple-image">
-                ${couple.image ? `<img src="${couple.image}" alt="${couple.name}" style="width: 100%; height: 100%; object-fit: cover;">` : '👫'}
+                ${couple.image ? '<img src="' + couple.image + '" alt="' + couple.name + '" style="width: 100%; height: 100%; object-fit: cover;">' : '👫'}
             </div>
             <div class="couple-info">
                 <div class="couple-number">Участник ${couple.id}</div>
@@ -141,13 +145,16 @@ function hideVoteModal() {
 
 function confirmVote() {
     if (selectedCoupleId !== null) {
-        const couple = couples.find(c => c.id === selectedCoupleId);
-        couple.votes++;
-        saveData();
-        setVote(selectedCoupleId);
-        hideVoteModal();
-        showThankYouModal();
-        renderCouples();
+        saveVote(selectedCoupleId).then(success => {
+            if (success) {
+                setVote(selectedCoupleId);
+                hideVoteModal();
+                showThankYouModal();
+                renderCouples();
+            } else {
+                alert('Ошибка голосования. Проверьте подключение к серверу.');
+            }
+        });
     }
 }
 
@@ -181,44 +188,37 @@ function updateVoteCounts() {
     });
 }
 
-// Проверка необходимости перехода на страницу результатов
-function checkResultsVisibility() {
-    const showResults = localStorage.getItem('showResults');
-    
-    // Автоматический переход на страницу результатов
-    // Если значение не 'false' и не пустое - редиректим
-    if (showResults && showResults !== 'false') {
-        console.log('Редирект на результаты! showResults =', showResults);
-        window.location.href = 'results.html';
+// Проверка видимости результатов
+async function checkResultsVisibility() {
+    try {
+        const response = await fetch(`${API_URL}/data`);
+        const data = await response.json();
+        
+        if (data.resultsVisible && !window.location.href.includes('results.html')) {
+            window.location.href = 'results.html';
+        }
+    } catch (error) {
+        console.error('Ошибка проверки результатов:', error);
     }
 }
-
-// Проверка URL параметра для показа результатов
-const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.get('showResults') === 'true') {
-    localStorage.setItem('showResults', Date.now().toString());
-}
-
-// Слушатель изменений localStorage для мгновенного редиректа (работает между вкладками)
-window.addEventListener('storage', function(e) {
-    if (e.key === 'showResults' && e.newValue && e.newValue !== 'false') {
-        console.log('Storage event! Редирект на результаты');
-        window.location.href = 'results.html';
-    }
-});
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', function() {
     loadData();
-    renderCouples();
     updateTimer();
-    setInterval(updateTimer, 1000);
     checkResultsVisibility();
+    setInterval(loadData, 5000); // Обновление данных каждые 5 секунд
+    setInterval(updateTimer, 1000);
+    setInterval(checkResultsVisibility, 2000); // Проверка результатов каждые 2 секунды
     
     // Обработчики модальных окон
-    document.getElementById('confirmVote').addEventListener('click', confirmVote);
-    document.getElementById('cancelVote').addEventListener('click', hideVoteModal);
-    document.getElementById('closeThankYou').addEventListener('click', hideThankYouModal);
+    const confirmBtn = document.getElementById('confirmVote');
+    const cancelBtn = document.getElementById('cancelVote');
+    const closeBtn = document.getElementById('closeThankYou');
+    
+    if (confirmBtn) confirmBtn.addEventListener('click', confirmVote);
+    if (cancelBtn) cancelBtn.addEventListener('click', hideVoteModal);
+    if (closeBtn) closeBtn.addEventListener('click', hideThankYouModal);
     
     // Закрытие модального окна по клику вне его
     document.querySelectorAll('.modal').forEach(modal => {
@@ -228,15 +228,4 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
-    // Очень частая проверка для быстрого редиректа (каждые 500мс)
-    setInterval(() => {
-        checkResultsVisibility();
-    }, 500);
-    
-    // Периодическое обновление данных (на случай если голосуют с других устройств)
-    setInterval(() => {
-        loadData();
-        updateVoteCounts();
-    }, 3000);
 });

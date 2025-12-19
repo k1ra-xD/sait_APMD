@@ -1,0 +1,17 @@
+{
+  "name": "bal-voting-server",
+  "version": "1.0.0",
+  "description": "Backend сервер для голосования на балу",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["voting", "backend"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

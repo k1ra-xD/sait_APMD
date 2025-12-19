@@ -1,0 +1,19 @@
+{
+  "name": "bal-voting",
+  "version": "1.0.0",
+  "description": "Голосование за лучшую пару на балу",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["voting", "ball"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}
