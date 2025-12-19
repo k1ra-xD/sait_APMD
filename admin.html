@@ -212,7 +212,9 @@
 
     <script>
         // API URL
-        const API_URL = `${window.location.protocol}//${window.location.hostname}:${window.location.port || '3000'}/api`;
+        const API_URL = window.location.port 
+            ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api`
+            : `${window.location.protocol}//${window.location.hostname}/api`;
         
         // Проверка пароля при загрузке страницы
         const ADMIN_PASSWORD = "admin2025";
