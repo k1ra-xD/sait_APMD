@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Голосование за лучшую пару - Бал 2025</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="church-ornament">☦️</div>
+            <h1>🎭 Бал 2025 🎭</h1>
+            <h2>Голосование за лучшую пару</h2>
+            <div class="timer" id="timer"></div>
+            <div class="church-ornament">☦️</div>
+        </header>
+
+        <div class="info-panel">
+            <p>Проголосуйте за вашу любимую пару! Каждый может проголосовать только один раз.</p>
+        </div>
+
+        <div class="couples-grid" id="couplesGrid">
+            <!-- Пары будут добавлены через JavaScript -->
+        </div>
+
+        <div class="footer">
+            <a href="admin.html" class="btn-admin">⚙️ Админ-панель</a>
+        </div>
+    </div>
+
+    <div id="voteModal" class="modal">
+        <div class="modal-content">
+            <h3>Подтвердите ваш голос</h3>
+            <p>Вы уверены, что хотите проголосовать за пару <span id="coupleName"></span>?</p>
+            <p class="warning">Вы сможете проголосовать только один раз!</p>
+            <div class="modal-buttons">
+                <button class="btn-confirm" id="confirmVote">Да, проголосовать</button>
+                <button class="btn-cancel" id="cancelVote">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="thankYouModal" class="modal">
+        <div class="modal-content success">
+            <h3>✅ Спасибо за ваш голос!</h3>
+            <p>Ваш голос учтён</p>
+            <button class="btn-confirm" id="closeThankYou">Закрыть</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

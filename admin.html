@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель - Бал 2025</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .admin-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .admin-header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .admin-header h1 {
+            color: #333;
+            font-size: 2.5em;
+        }
+
+        .admin-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .admin-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .couple-edit {
+            display: grid;
+            grid-template-columns: 80px 1fr 1fr auto;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .couple-edit input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .couple-edit .votes-display {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .btn-admin-action {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-admin-action:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .warning-text {
+            color: #e74c3c;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .image-preview {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .couple-edit {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <a href="index.html" class="back-link" style="display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: white; color: #667eea; text-decoration: none; border-radius: 8px; font-weight: bold;">← Вернуться на главную</a>
+
+        <div class="admin-header">
+            <h1>⚙️ Админ-панель</h1>
+        </div>
+
+        <div class="admin-section">
+            <h2>📊 Статистика</h2>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalVotes">0</div>
+                    <div class="stat-label">Всего голосов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalCouples">20</div>
+                    <div class="stat-label">Пар участвует</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="leaderVotes">0</div>
+                    <div class="stat-label">Голосов у лидера</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <h2>✏️ Редактирование пар</h2>
+            <p style="color: #666; margin-bottom: 20px;">Измените названия пар или добавьте ссылки на фотографии</p>
+            <div id="couplesEditor">
+                <!-- Пары будут здесь -->
+            </div>
+            <div class="action-buttons">
+                <button class="btn-admin-action btn-success" onclick="saveCouples()">💾 Сохранить изменения</button>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <h2>🔄 Управление голосованием</h2>
+            <div class="action-buttons">
+                <button class="btn-admin-action btn-success" id="toggleResults" onclick="toggleResultsVisibility()">👁️ Показать результаты</button>
+                <button class="btn-admin-action" onclick="exportResults()">📥 Экспорт результатов</button>
+                <button class="btn-admin-action btn-danger" onclick="resetVotes()">🔄 Сбросить голоса</button>
+                <button class="btn-admin-action btn-danger" onclick="resetAll()">⚠️ Сбросить всё</button>
+            </div>
+            <p class="warning-text" style="margin-top: 15px;">⚠️ Внимание! Сброс голосов нельзя отменить!</p>
+        </div>
+
+        <div class="admin-section">
+            <h2>📱 QR-код для голосования</h2>
+            <p style="color: #666; margin-bottom: 15px;">Используйте этот QR-код для доступа к сайту голосования</p>
+            <div id="qrcode" style="text-align: center; padding: 20px;">
+                <p>Для создания QR-кода используйте сервисы:</p>
+                <ul style="text-align: left; max-width: 500px; margin: 20px auto; line-height: 2;">
+                    <li><a href="https://www.qr-code-generator.com/" target="_blank">QR Code Generator</a></li>
+                    <li><a href="https://ru.qr-code-generator.com/" target="_blank">QR Code Generator (RU)</a></li>
+                    <li><a href="https://www.qrcode-monkey.com/" target="_blank">QR Code Monkey</a></li>
+                </ul>
+                <p style="margin-top: 15px; font-weight: bold;">URL сайта: <span id="siteUrl"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Проверка пароля при загрузке страницы
+        const ADMIN_PASSWORD = "admin2025"; // Измените этот пароль!
+
+        function checkPassword() {
+            const savedPassword = sessionStorage.getItem('adminAuthenticated');
+            if (savedPassword === ADMIN_PASSWORD) {
+                return true;
+            }
+
+            const password = prompt('Введите пароль администратора:');
+            if (password === ADMIN_PASSWORD) {
+                sessionStorage.setItem('adminAuthenticated', ADMIN_PASSWORD);
+                return true;
+            } else {
+                alert('Неверный пароль! Доступ запрещён.');
+                window.location.href = 'index.html';
+                return false;
+            }
+        }
+
+        let couples = [];
+
+        function loadCouples() {
+            const savedCouples = localStorage.getItem('ballCouples');
+            if (savedCouples) {
+                couples = JSON.parse(savedCouples);
+            } else {
+                // Инициализация пар по умолчанию
+                for (let i = 1; i <= 20; i++) {
+                    couples.push({ id: i, name: `Пара №${i}`, image: '', votes: 0 });
+                }
+                localStorage.setItem('ballCouples', JSON.stringify(couples));
+            }
+            updateStats();
+            renderEditor();
+        }
+
+        function updateStats() {
+            const totalVotes = couples.reduce((sum, c) => sum + c.votes, 0);
+            const maxVotes = Math.max(...couples.map(c => c.votes), 0);
+            
+            document.getElementById('totalVotes').textContent = totalVotes;
+            document.getElementById('totalCouples').textContent = couples.length;
+            document.getElementById('leaderVotes').textContent = maxVotes;
+        }
+
+        function renderEditor() {
+            const editor = document.getElementById('couplesEditor');
+            editor.innerHTML = '';
+
+            couples.forEach((couple, index) => {
+                const div = document.createElement('div');
+                div.className = 'couple-edit';
+                div.innerHTML = `
+                    <div style="font-weight: bold; color: #667eea;">№${couple.id}</div>
+                    <input type="text" 
+                           value="${couple.name}" 
+                           id="name-${couple.id}"
+                           placeholder="Название пары">
+                    <input type="text" 
+                           value="${couple.image}" 
+                           id="image-${couple.id}"
+                           placeholder="URL фото (необязательно)">
+                    <div class="votes-display">❤️ ${couple.votes}</div>
+                `;
+                editor.appendChild(div);
+            });
+        }
+
+        function saveCouples() {
+            couples.forEach(couple => {
+                const nameInput = document.getElementById(`name-${couple.id}`);
+                const imageInput = document.getElementById(`image-${couple.id}`);
+                
+                if (nameInput) couple.name = nameInput.value;
+                if (imageInput) couple.image = imageInput.value;
+            });
+
+            localStorage.setItem('ballCouples', JSON.stringify(couples));
+            alert('✅ Изменения сохранены!');
+            loadCouples();
+        }
+
+        function resetVotes() {
+            if (confirm('Вы уверены, что хотите сбросить все голоса? Это действие нельзя отменить!')) {
+                couples.forEach(couple => couple.votes = 0);
+                localStorage.setItem('ballCouples', JSON.stringify(couples));
+                localStorage.removeItem('hasVoted');
+                localStorage.removeItem('votedCoupleId');
+                alert('✅ Голоса сброшены!');
+                loadCouples();
+            }
+        }
+
+        function resetAll() {
+            if (confirm('Вы уверены, что хотите сбросить ВСЁ (названия, фото, голоса)? Это действие нельзя отменить!')) {
+                if (confirm('Последнее предупреждение! Все данные будут удалены!')) {
+                    localStorage.clear();
+                    alert('✅ Все данные сброшены!');
+                    location.reload();
+                }
+            }
+        }
+
+        function toggleResultsVisibility() {
+            const currentState = localStorage.getItem('showResults');
+            
+            if (currentState && currentState !== 'false') {
+                // Скрываем результаты
+                localStorage.setItem('showResults', 'false');
+                updateResultsButton();
+                alert('❌ Результаты скрыты от пользователей');
+            } else {
+                // Показываем результаты - используем timestamp для гарантированного обновления
+                localStorage.setItem('showResults', Date.now().toString());
+                updateResultsButton();
+                alert('✅ Результаты показаны! Пользователи будут перенаправлены на страницу результатов');
+            }
+        }
+
+        function updateResultsButton() {
+            const showResults = localStorage.getItem('showResults');
+            const btn = document.getElementById('toggleResults');
+            if (showResults && showResults !== 'false') {
+                btn.textContent = '🙈 Скрыть результаты';
+                btn.className = 'btn-admin-action btn-danger';
+            } else {
+                btn.textContent = '👁️ Показать результаты';
+                btn.className = 'btn-admin-action btn-success';
+            }
+        }
+
+        function exportResults() {
+            const sortedCouples = [...couples].sort((a, b) => b.votes - a.votes);
+            let text = '📊 РЕЗУЛЬТАТЫ ГОЛОСОВАНИЯ - БАЛ 2025\n\n';
+            text += `Всего голосов: ${couples.reduce((sum, c) => sum + c.votes, 0)}\n\n`;
+            text += 'МЕСТА:\n';
+            sortedCouples.forEach((couple, index) => {
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+                text += `${index + 1}. ${medal} ${couple.name} - ${couple.votes} голосов\n`;
+            });
+
+            // Создаем blob и скачиваем
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `results-${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Отображение текущего URL
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!checkPassword()) {
+                return;
+            }
+            document.getElementById('siteUrl').textContent = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
+            loadCouples();
+            updateResultsButton();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты голосования - Бал 2025</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .results-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .results-header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .results-header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .total-votes {
+            font-size: 1.3em;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .winner-podium {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 20px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .podium-place {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .podium-place:hover {
+            transform: translateY(-5px);
+        }
+
+        .podium-place.first {
+            order: 2;
+            width: 300px;
+            border: 4px solid gold;
+            background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+        }
+
+        .podium-place.second {
+            order: 1;
+            width: 250px;
+            border: 4px solid silver;
+        }
+
+        .podium-place.third {
+            order: 3;
+            width: 250px;
+            border: 4px solid #cd7f32;
+        }
+
+        .podium-medal {
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+
+        .podium-couple-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .podium-votes {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .results-table {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .results-table h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .result-row {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            transition: background 0.3s ease;
+        }
+
+        .result-row:hover {
+            background: #f5f5f5;
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-position {
+            font-size: 1.5em;
+            font-weight: bold;
+            width: 50px;
+            color: #667eea;
+        }
+
+        .result-name {
+            flex: 1;
+            font-size: 1.2em;
+            color: #333;
+        }
+
+        .result-votes {
+            font-size: 1.1em;
+            color: #666;
+            margin-right: 20px;
+        }
+
+        .result-bar-container {
+            width: 200px;
+            height: 20px;
+            background: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .result-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+        }
+
+        .refresh-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            .winner-podium {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .podium-place.first,
+            .podium-place.second,
+            .podium-place.third {
+                width: 100%;
+                max-width: 300px;
+                order: initial;
+            }
+
+            .result-bar-container {
+                width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="results-container">
+        <a href="index.html" class="back-link">← Вернуться к голосованию</a>
+
+        <div class="results-header">
+            <h1>🏆 Результаты голосования 🏆</h1>
+            <div class="total-votes">Всего голосов: <span id="totalVotes">0</span></div>
+            <div class="timer" id="timer"></div>
+        </div>
+
+        <div id="podium" class="winner-podium">
+            <!-- Топ-3 будут здесь -->
+        </div>
+
+        <div class="results-table">
+            <h2>Полная таблица результатов</h2>
+            <div id="resultsTable">
+                <!-- Результаты будут здесь -->
+            </div>
+        </div>
+
+        <button class="refresh-btn" onclick="loadResults()">🔄 Обновить результаты</button>
+
+        <div class="footer" style="margin-top: 30px;">
+            <a href="index.html" class="btn-results">← Главная страница</a>
+            <a href="admin.html" class="btn-admin">⚙️ Админ-панель</a>
+        </div>
+    </div>
+
+    <script>
+        function loadResults() {
+            const savedCouples = localStorage.getItem('ballCouples');
+            let couples = [];
+            
+            if (savedCouples) {
+                couples = JSON.parse(savedCouples);
+            } else {
+                // Данные по умолчанию
+                for (let i = 1; i <= 20; i++) {
+                    couples.push({ id: i, name: `Пара №${i}`, votes: 0 });
+                }
+            }
+
+            // Сортируем по голосам
+            couples.sort((a, b) => b.votes - a.votes);
+
+            // Подсчитываем общее количество голосов
+            const totalVotes = couples.reduce((sum, c) => sum + c.votes, 0);
+            document.getElementById('totalVotes').textContent = totalVotes;
+
+            // Отображаем топ-3
+            const podium = document.getElementById('podium');
+            podium.innerHTML = '';
+
+            const medals = ['🥇', '🥈', '🥉'];
+            const classes = ['first', 'second', 'third'];
+
+            for (let i = 0; i < Math.min(3, couples.length); i++) {
+                const couple = couples[i];
+                if (couple.votes > 0) {
+                    const podiumPlace = document.createElement('div');
+                    podiumPlace.className = `podium-place ${classes[i]}`;
+                    podiumPlace.innerHTML = `
+                        <div class="podium-medal">${medals[i]}</div>
+                        <div class="podium-couple-name">${couple.name}</div>
+                        <div class="podium-votes">❤️ ${couple.votes} ${getVotesWord(couple.votes)}</div>
+                    `;
+                    podium.appendChild(podiumPlace);
+                }
+            }
+
+            // Отображаем полную таблицу
+            const resultsTable = document.getElementById('resultsTable');
+            resultsTable.innerHTML = '';
+
+            const maxVotes = couples.length > 0 ? couples[0].votes : 1;
+
+            couples.forEach((couple, index) => {
+                const percentage = maxVotes > 0 ? (couple.votes / maxVotes) * 100 : 0;
+                
+                const row = document.createElement('div');
+                row.className = 'result-row';
+                row.innerHTML = `
+                    <div class="result-position">#${index + 1}</div>
+                    <div class="result-name">${couple.name}</div>
+                    <div class="result-votes">${couple.votes} ${getVotesWord(couple.votes)}</div>
+                    <div class="result-bar-container">
+                        <div class="result-bar" style="width: ${percentage}%"></div>
+                    </div>
+                `;
+                resultsTable.appendChild(row);
+            });
+        }
+
+        function getVotesWord(count) {
+            const lastDigit = count % 10;
+            const lastTwoDigits = count % 100;
+
+            if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
+                return 'голосов';
+            }
+
+            if (lastDigit === 1) {
+                return 'голос';
+            }
+
+            if (lastDigit >= 2 && lastDigit <= 4) {
+                return 'голоса';
+            }
+
+            return 'голосов';
+        }
+
+        function updateTimer() {
+            const timer = document.getElementById('timer');
+            if (timer) {
+                const now = new Date();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const seconds = now.getSeconds().toString().padStart(2, '0');
+                timer.textContent = `🕐 ${hours}:${minutes}:${seconds}`;
+            }
+        }
+
+        // Загрузка при открытии страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadResults();
+            updateTimer();
+            setInterval(updateTimer, 1000);
+            
+            // Автообновление каждые 10 секунд
+            setInterval(loadResults, 10000);
+        });
+    </script>
+</body>
+</html>
