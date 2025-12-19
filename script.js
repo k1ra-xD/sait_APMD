@@ -13,6 +13,8 @@ console.log('🔗 API URL:', API_URL);
 // Данные пар
 let couples = [];
 let isLoading = false;
+let prevMetaHash = '';
+let prevVotesHash = '';
 
 // Утилиты для loading состояния
 function showLoading() {
@@ -72,8 +74,25 @@ async function loadData() {
             showNotification('Голосование сброшено! Вы можете проголосовать снова', 'info');
         }
         
-        couples = data.couples;
-        renderCouples();
+        // Compute hashes to avoid full re-render on every poll
+        const metaHash = data.couples.map(c => `${c.id}:${c.name}:${c.image}`).join('|');
+        const votesHash = data.couples.map(c => `${c.id}:${c.votes}`).join('|');
+
+        // First load or metadata changed -> full render
+        if (!prevMetaHash || prevMetaHash !== metaHash) {
+            prevMetaHash = metaHash;
+            prevVotesHash = votesHash;
+            couples = data.couples;
+            renderCouples();
+        } else if (prevVotesHash !== votesHash) {
+            // Only votes changed -> update counters in place
+            prevVotesHash = votesHash;
+            couples = data.couples;
+            updateVoteCounts();
+        } else {
+            // No visible changes
+            couples = data.couples;
+        }
         checkResultsVisibility();
         
     } catch (error) {
@@ -179,6 +198,7 @@ function renderCouples() {
             <div class="couple-info">
                 <div class="couple-number">Участник ${couple.id}</div>
                 <div class="couple-name">${escapeHtml(couple.name)}</div>
+                <div class="vote-count">Голоса: <span id="votes-${couple.id}">${couple.votes}</span></div>
                 <button class="btn-vote" 
                         data-id="${couple.id}" 
                         ${voted ? 'disabled' : ''}
