@@ -198,7 +198,6 @@ function renderCouples() {
             <div class="couple-info">
                 <div class="couple-number">Участник ${couple.id}</div>
                 <div class="couple-name">${escapeHtml(couple.name)}</div>
-                <div class="vote-count">Голоса: <span id="votes-${couple.id}">${couple.votes}</span></div>
                 <button class="btn-vote" 
                         data-id="${couple.id}" 
                         ${voted ? 'disabled' : ''}

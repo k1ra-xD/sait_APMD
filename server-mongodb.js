@@ -1,10 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/bal-voting';
+const FILE_DB = path.join(__dirname, 'database.json');
+let useFileDb = false;
 
 // Middleware
 app.use(cors());
@@ -27,19 +31,54 @@ const SettingsSchema = new mongoose.Schema({
 const Couple = mongoose.model('Couple', CoupleSchema);
 const Settings = mongoose.model('Settings', SettingsSchema);
 
-// Подключение к MongoDB
+// Helpers for file DB
+function readFileDb() {
+    try {
+        const data = fs.readFileSync(FILE_DB, 'utf-8');
+        return JSON.parse(data);
+    } catch (e) {
+        return { couples: [], resultsVisible: false, lastReset: 0 };
+    }
+}
+
+function writeFileDb(obj) {
+    fs.writeFileSync(FILE_DB, JSON.stringify(obj, null, 2), 'utf-8');
+}
+
+async function initFileDb() {
+    let db = readFileDb();
+    if (!Array.isArray(db.couples) || db.couples.length === 0) {
+        db.couples = [];
+        for (let i = 1; i <= 15; i++) {
+            db.couples.push({
+                id: i,
+                name: `Пара №${i}`,
+                image: i === 1 ? 'Photo_utch/1.jpg' : `Photo_utch/${i}.webp`,
+                votes: 0
+            });
+        }
+    }
+    if (typeof db.resultsVisible === 'undefined') db.resultsVisible = false;
+    if (typeof db.lastReset === 'undefined') db.lastReset = 0;
+    writeFileDb(db);
+    console.log('✅ Локальная file-DB инициализирована (database.json)');
+}
+
+// Подключение к MongoDB с fallback на файл
 mongoose.connect(MONGODB_URI)
     .then(async () => {
         console.log('✅ MongoDB подключена');
         await initDatabase();
     })
-    .catch(err => {
-        console.error('❌ Ошибка подключения к MongoDB:', err);
-        process.exit(1);
+    .catch(async (err) => {
+        console.error('⚠️ Не удалось подключиться к MongoDB, переключаемся на database.json:', err.message);
+        useFileDb = true;
+        await initFileDb();
     });
 
-// Инициализация БД
+// Инициализация MongoDB (если используется Mongo)
 async function initDatabase() {
+    if (useFileDb) return;
     try {
         const count = await Couple.countDocuments();
         
@@ -69,7 +108,7 @@ async function initDatabase() {
             await Settings.create({ key: 'lastReset', value: 0 });
         }
     } catch (error) {
-        console.error('Ошибка инициализации:', error);
+        console.error('Ошибка инициализации MongoDB:', error);
     }
 }
 
@@ -78,6 +117,12 @@ async function initDatabase() {
 // Получить все данные
 app.get('/api/data', async (req, res) => {
     try {
+        if (useFileDb) {
+            const db = readFileDb();
+            const couples = (db.couples || []).slice().sort((a, b) => a.id - b.id);
+            return res.json({ couples, resultsVisible: db.resultsVisible || false, lastReset: db.lastReset || 0 });
+        }
+
         const couples = await Couple.find().sort({ id: 1 });
         const resultsVisible = await Settings.findOne({ key: 'resultsVisible' });
         const lastReset = await Settings.findOne({ key: 'lastReset' });
@@ -95,6 +140,12 @@ app.get('/api/data', async (req, res) => {
 // Получить пары
 app.get('/api/couples', async (req, res) => {
     try {
+        if (useFileDb) {
+            const db = readFileDb();
+            const couples = (db.couples || []).slice().sort((a, b) => a.id - b.id);
+            return res.json(couples);
+        }
+
         const couples = await Couple.find().sort({ id: 1 });
         res.json(couples);
     } catch (error) {
@@ -110,7 +161,15 @@ app.post('/api/vote', async (req, res) => {
         if (!coupleId) {
             return res.status(400).json({ error: 'Не указан ID пары' });
         }
-        
+        if (useFileDb) {
+            const db = readFileDb();
+            const idx = (db.couples || []).findIndex(c => c.id === Number(coupleId));
+            if (idx === -1) return res.status(404).json({ error: 'Пара не найдена' });
+            db.couples[idx].votes = (db.couples[idx].votes || 0) + 1;
+            writeFileDb(db);
+            return res.json({ success: true, couple: db.couples[idx] });
+        }
+
         const couple = await Couple.findOneAndUpdate(
             { id: coupleId },
             { $inc: { votes: 1 } },
@@ -130,6 +189,15 @@ app.post('/api/vote', async (req, res) => {
 // Сбросить голоса (для админа)
 app.post('/api/reset', async (req, res) => {
     try {
+        if (useFileDb) {
+            const db = readFileDb();
+            db.couples = (db.couples || []).map(c => ({ ...c, votes: 0 }));
+            const timestamp = Date.now();
+            db.lastReset = timestamp;
+            writeFileDb(db);
+            return res.json({ success: true, lastReset: timestamp });
+        }
+
         await Couple.updateMany({}, { votes: 0 });
         
         const timestamp = Date.now();
@@ -148,6 +216,13 @@ app.post('/api/reset', async (req, res) => {
 // Показать/скрыть результаты
 app.post('/api/toggle-results', async (req, res) => {
     try {
+        if (useFileDb) {
+            const db = readFileDb();
+            db.resultsVisible = !db.resultsVisible;
+            writeFileDb(db);
+            return res.json({ resultsVisible: db.resultsVisible });
+        }
+
         const current = await Settings.findOne({ key: 'resultsVisible' });
         const newValue = !current?.value;
         
@@ -166,6 +241,11 @@ app.post('/api/toggle-results', async (req, res) => {
 // Получить статус видимости результатов
 app.get('/api/results-status', async (req, res) => {
     try {
+        if (useFileDb) {
+            const db = readFileDb();
+            return res.json({ resultsVisible: db.resultsVisible || false });
+        }
+
         const setting = await Settings.findOne({ key: 'resultsVisible' });
         res.json({ resultsVisible: setting?.value || false });
     } catch (error) {
@@ -181,7 +261,20 @@ app.put('/api/couples', async (req, res) => {
         if (!Array.isArray(updatedCouples)) {
             return res.status(400).json({ error: 'Неверный формат данных' });
         }
-        
+        if (useFileDb) {
+            const db = readFileDb();
+            for (const couple of updatedCouples) {
+                const idx = (db.couples || []).findIndex(c => c.id === Number(couple.id));
+                if (idx !== -1) {
+                    db.couples[idx].name = couple.name;
+                    db.couples[idx].image = couple.image;
+                }
+            }
+            writeFileDb(db);
+            const couples = (db.couples || []).slice().sort((a, b) => a.id - b.id);
+            return res.json({ success: true, couples });
+        }
+
         for (const couple of updatedCouples) {
             await Couple.findOneAndUpdate(
                 { id: couple.id },
@@ -223,7 +316,7 @@ app.listen(PORT, '0.0.0.0', () => {
 ║   Админка:    /admin.html                  ║
 ║   Результаты: /results.html                ║
 ║                                            ║
-║   База данных: MongoDB                     ║
+║   База данных: MongoDB / database.json     ║
 ╚════════════════════════════════════════════╝
     `);
 });
@@ -231,6 +324,14 @@ app.listen(PORT, '0.0.0.0', () => {
 // Debug-эндпоинт: возвращает количество документов и примерные данные (временно)
 app.get('/api/debug', async (req, res) => {
     try {
+        if (useFileDb) {
+            const db = readFileDb();
+            const count = (db.couples || []).length;
+            const sample = (db.couples || []).slice(0, 5);
+            const settings = { resultsVisible: db.resultsVisible, lastReset: db.lastReset };
+            return res.json({ count, sample, settings });
+        }
+
         const count = await Couple.countDocuments();
         const sample = await Couple.find().sort({ id: 1 }).limit(5);
         const settings = await Settings.find();
