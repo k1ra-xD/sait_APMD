@@ -60,11 +60,14 @@ async function loadData() {
         }
         
         const data = await response.json();
-        
+
+        // Отладка: выводим, сколько пар пришло с сервера
+        console.log('[loadData] Получено пар:', Array.isArray(data.couples) ? data.couples.length : 'нет массива', data.couples);
+
         // Проверяем timestamp последнего сброса
         const lastReset = data.lastReset || 0;
         const lastKnownReset = parseInt(localStorage.getItem('lastKnownReset') || '0');
-        
+
         if (lastReset > lastKnownReset) {
             // Был сброс - очищаем localStorage
             localStorage.removeItem('hasVoted');
@@ -73,7 +76,7 @@ async function loadData() {
             console.log('🔄 Голоса сброшены - можете голосовать снова!');
             showNotification('Голосование сброшено! Вы можете проголосовать снова', 'info');
         }
-        
+
         // Compute hashes to avoid full re-render on every poll
         const metaHash = data.couples.map(c => `${c.id}:${c.name}:${c.image}`).join('|');
         const votesHash = data.couples.map(c => `${c.id}:${c.votes}`).join('|');
@@ -83,6 +86,7 @@ async function loadData() {
             prevMetaHash = metaHash;
             prevVotesHash = votesHash;
             couples = data.couples;
+            console.log('[renderCouples] Перед рендером, пар:', couples.length, couples);
             renderCouples();
         } else if (prevVotesHash !== votesHash) {
             // Only votes changed -> update counters in place
@@ -108,24 +112,29 @@ async function loadData() {
 async function saveVote(coupleId) {
     try {
         showLoading();
-        
+
         const response = await fetch(`${API_URL}/vote`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ coupleId })
         });
-        
+
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             await loadData(); // Перезагружаем данные
+            // Доп. защита: если после loadData() массив пар некорректный, пробуем ещё раз
+            if (!Array.isArray(couples) || couples.length < 10) {
+                console.warn('[saveVote] Массив пар после голосования подозрительно мал, повторная загрузка...');
+                await loadData();
+            }
             createConfetti(); // Конфетти при успешном голосовании
         }
-        
+
         return data.success;
     } catch (error) {
         console.error('❌ Ошибка голосования:', error);
@@ -172,24 +181,39 @@ function setVote(coupleId) {
 function renderCouples() {
     const grid = document.getElementById('couplesGrid');
     grid.innerHTML = '';
-    
+
     const votedId = getVotedCoupleId();
     const voted = hasVoted();
-    
+
+    // Отладка: выводим массив couples
+    console.log('[renderCouples] couples:', couples);
+    if (!Array.isArray(couples) || couples.length === 0) {
+        const msg = document.createElement('div');
+        msg.textContent = 'Нет данных для отображения пар.';
+        msg.style.color = 'red';
+        grid.appendChild(msg);
+        return;
+    }
+
     couples.forEach(couple => {
+        // Защита: если нет id или name, не рендерим карточку
+        if (!couple || typeof couple.id === 'undefined' || !couple.name) {
+            console.warn('Пропущена некорректная пара:', couple);
+            return;
+        }
         const card = document.createElement('div');
         card.className = 'couple-card';
         card.setAttribute('role', 'listitem');
-        
+
         if (voted && couple.id === votedId) {
             card.classList.add('voted');
         }
-        
+
         const isVotedCard = voted && couple.id === votedId;
         const buttonText = isVotedCard ? '✓ Вы проголосовали' : 
                           voted ? 'Голосование закрыто' : 
                           '💖 Проголосовать';
-        
+
         card.innerHTML = `
             ${isVotedCard ? '<div class="voted-badge" aria-label="Вы проголосовали">✓ Ваш голос</div>' : ''}
             <div class="couple-image">
@@ -198,6 +222,7 @@ function renderCouples() {
             <div class="couple-info">
                 <div class="couple-number">Участник ${couple.id}</div>
                 <div class="couple-name">${escapeHtml(couple.name)}</div>
+                <div class="vote-count" id="votes-${couple.id}">Голосов: ${couple.votes}</div>
                 <button class="btn-vote" 
                         data-id="${couple.id}" 
                         ${voted ? 'disabled' : ''}
@@ -206,7 +231,7 @@ function renderCouples() {
                 </button>
             </div>
         `;
-        
+
         grid.appendChild(card);
     });
     

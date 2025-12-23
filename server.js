@@ -9,7 +9,13 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/bal-vo
 // Middleware
 app.use(cors());
 app.use(express.json());
+// Основная статика
 app.use(express.static(__dirname));
+
+// Кэширование изображений (1 месяц)
+const oneMonth = 30 * 24 * 60 * 60 * 1000;
+app.use('/Photo_utch', express.static(__dirname + '/Photo_utch', { maxAge: oneMonth }));
+app.use('/foto_cait', express.static(__dirname + '/foto_cait', { maxAge: oneMonth }));
 
 // MongoDB Schema
 const CoupleSchema = new mongoose.Schema({
